@@ -1,4 +1,4 @@
-# test app
+# Utility Functions Library
 
 A new Flutter project.
 
