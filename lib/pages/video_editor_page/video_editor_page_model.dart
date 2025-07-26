@@ -1,8 +1,8 @@
 import '/flutter_flow/flutter_flow_util.dart';
-import 'preview_widget.dart' show PreviewWidget;
+import 'video_editor_page_widget.dart' show VideoEditorPageWidget;
 import 'package:flutter/material.dart';
 
-class PreviewModel extends FlutterFlowModel<PreviewWidget> {
+class VideoEditorPageModel extends FlutterFlowModel<VideoEditorPageWidget> {
   @override
   void initState(BuildContext context) {}
 
