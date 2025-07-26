@@ -64,14 +64,10 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
               isAndroid: isAndroid,
               onImageCaptured: (imagePath, isFrontCamera) async {
                 context.pushNamed(
-                  PreviewWidget.routeName,
+                  ImageEditorPageWidget.routeName,
                   queryParameters: {
-                    'filePath': serializeParam(
+                    'imagePath': serializeParam(
                       imagePath,
-                      ParamType.String,
-                    ),
-                    'mediaType': serializeParam(
-                      'image',
                       ParamType.String,
                     ),
                   }.withoutNulls,
