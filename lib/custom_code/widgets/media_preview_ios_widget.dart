@@ -1,15 +1,10 @@
 // Automatic FlutterFlow imports
-import "package:utility_functions_library_8g4bud/backend/schema/structs/index.dart"
-    as utility_functions_library_8g4bud_data_schema;
-import 'package:ff_theme/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'index.dart'; // Imports other custom widgets
 import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
-
-// Set your widget name, define your parameter, and then add the
-// boilerplate code using the green button on the right!
 
 import 'dart:io';
 import 'dart:async';
@@ -122,8 +117,10 @@ class _MediaPreviewIosWidgetState extends State<MediaPreviewIosWidget> {
       );
     }
 
+    Widget content;
+
     if (widget.mediaType == 'image') {
-      return Image.file(
+      content = Image.file(
         File(widget.filePath),
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
@@ -135,24 +132,30 @@ class _MediaPreviewIosWidgetState extends State<MediaPreviewIosWidget> {
       );
     } else if (widget.mediaType == 'video') {
       if (_videoController != null && _videoController!.value.isInitialized) {
-        return Center(
+        content = Center(
           child: AspectRatio(
             aspectRatio: _videoController!.value.aspectRatio,
             child: VideoPlayer(_videoController!),
           ),
         );
       } else {
-        return const Center(
+        content = const Center(
           child: CircularProgressIndicator(),
         );
       }
     } else {
-      return const Center(
+      content = const Center(
         child: Text(
           'Unsupported media type',
           style: TextStyle(color: Colors.white),
         ),
       );
     }
+
+    // No need to flip anything here anymore!
+    // Images are flipped during capture in the camera widget
+    // Videos are flipped during capture using FFmpeg for Android front camera
+    // iOS videos work correctly by default
+    return content;
   }
 }

@@ -1,7 +1,7 @@
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/custom_code/widgets/index.dart' as custom_widgets;
 import '/index.dart';
-import 'package:ff_theme/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
 import 'camera_custom_page_model.dart';
 export 'camera_custom_page_model.dart';
@@ -62,7 +62,7 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
               showCameraSwitchButton: true,
               borderRadius: 12.0,
               isAndroid: isAndroid,
-              onImageCaptured: (imagePath) async {
+              onImageCaptured: (imagePath, isFrontCamera) async {
                 context.pushNamed(
                   PreviewWidget.routeName,
                   queryParameters: {
@@ -77,7 +77,7 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
                   }.withoutNulls,
                 );
               },
-              onVideoCaptured: (videoPath) async {
+              onVideoCaptured: (videoPath, isFrontCamera) async {
                 context.pushNamed(
                   PreviewWidget.routeName,
                   queryParameters: {
