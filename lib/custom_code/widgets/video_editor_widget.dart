@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-class MediaEditorWidget extends StatefulWidget {
-  const MediaEditorWidget({
+class VideoEditorWidget extends StatefulWidget {
+  const VideoEditorWidget({
     super.key,
     this.width,
     this.height,
@@ -17,10 +17,10 @@ class MediaEditorWidget extends StatefulWidget {
   final double? height;
 
   @override
-  State<MediaEditorWidget> createState() => _MediaEditorWidgetState();
+  State<VideoEditorWidget> createState() => _VideoEditorWidgetState();
 }
 
-class _MediaEditorWidgetState extends State<MediaEditorWidget> {
+class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   @override
   Widget build(BuildContext context) {
     return Container();

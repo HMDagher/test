@@ -63,6 +63,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               ParamType.String,
             ),
           ),
+        ),
+        FFRoute(
+          name: ImageEditorPageWidget.routeName,
+          path: ImageEditorPageWidget.routePath,
+          builder: (context, params) => ImageEditorPageWidget(
+            imagePath: params.getParam(
+              'imagePath',
+              ParamType.String,
+            ),
+          ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
