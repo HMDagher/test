@@ -1,7 +1,5 @@
 // Automatic FlutterFlow imports
-import "package:utility_functions_library_8g4bud/backend/schema/structs/index.dart"
-    as utility_functions_library_8g4bud_data_schema;
-import 'package:ff_theme/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'index.dart'; // Imports other custom widgets
 import 'package:flutter/material.dart';
@@ -12,9 +10,30 @@ import 'index.dart'; // Imports other custom widgets
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:path/path.dart' as path;
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+
+// Data class to hold captured media information
+class CapturedMediaInfo {
+  final String filePath;
+  final bool isFrontCamera;
+  final String mediaType; // 'image' or 'video'
+  final DateTime capturedAt;
+
+  CapturedMediaInfo({
+    required this.filePath,
+    required this.isFrontCamera,
+    required this.mediaType,
+    required this.capturedAt,
+  });
+}
 
 // Helper functions to convert string parameters to camera package enums
 FlashMode _convertFlashMode(String mode) {
@@ -89,8 +108,10 @@ class CameraCustomWidget extends StatefulWidget {
 
   final double? width;
   final double? height;
-  final Future<dynamic> Function(String imagePath)? onImageCaptured;
-  final Future<dynamic> Function(String videoPath)? onVideoCaptured;
+  final Future<dynamic> Function(String imagePath, bool isFrontCamera)?
+      onImageCaptured;
+  final Future<dynamic> Function(String videoPath, bool isFrontCamera)?
+      onVideoCaptured;
   final Future<dynamic> Function(String error)? onError;
   final bool showControls;
   final bool allowVideoRecording;
@@ -269,6 +290,117 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     }
   }
 
+  // Helper function to flip image horizontally
+  Future<Uint8List> _flipImageHorizontally(Uint8List imageBytes) async {
+    final ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
+    final ui.FrameInfo frameInfo = await codec.getNextFrame();
+    final ui.Image image = frameInfo.image;
+
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+
+    // Apply horizontal flip transformation
+    canvas.scale(-1.0, 1.0);
+    canvas.translate(-image.width.toDouble(), 0);
+    canvas.drawImage(image, Offset.zero, Paint());
+
+    final ui.Picture picture = recorder.endRecording();
+    final ui.Image flippedImage =
+        await picture.toImage(image.width, image.height);
+    final ByteData? byteData =
+        await flippedImage.toByteData(format: ui.ImageByteFormat.png);
+
+    image.dispose();
+    flippedImage.dispose();
+    picture.dispose();
+
+    return byteData!.buffer.asUint8List();
+  }
+
+  // Helper function to save flipped image
+  Future<String> _saveFlippedImage(
+      Uint8List imageBytes, String originalPath) async {
+    final String dir = path.dirname(originalPath);
+    final String name = path.basenameWithoutExtension(originalPath);
+    final String ext = path.extension(originalPath);
+    final String newPath = path.join(dir, '${name}_front_flipped$ext');
+
+    final File newFile = File(newPath);
+    await newFile.writeAsBytes(imageBytes);
+    return newPath;
+  }
+
+  // Helper function to check if media is from front camera based on filename
+  static bool isFromFrontCamera(String filePath) {
+    final String filename = path.basename(filePath);
+    return filename.contains('_front_') || filename.contains('front_flipped');
+  }
+
+  // Helper function to check if video needs flipping
+  bool _shouldFlipVideo() {
+    // Only flip front camera videos on Android
+    return _isUsingFrontCamera && widget.isAndroid;
+  }
+
+  // Helper function to flip video horizontally using FFmpeg
+  Future<String?> _flipVideoHorizontally(String inputPath) async {
+    try {
+      final String dir = path.dirname(inputPath);
+      final String name = path.basenameWithoutExtension(inputPath);
+      final String ext = path.extension(inputPath);
+      final String outputPath = path.join(dir, '${name}_front_flipped$ext');
+
+      // Check if input file exists
+      if (!await File(inputPath).exists()) {
+        debugPrint('Input video file does not exist: $inputPath');
+        return null;
+      }
+
+      // FFmpeg command to flip video horizontally
+      // -vf hflip: horizontal flip filter
+      // -c:a copy: copy audio without re-encoding for better performance
+      // -preset ultrafast: fastest encoding preset for mobile devices
+      final String command =
+          '-i "$inputPath" -vf hflip -c:a copy -preset ultrafast "$outputPath"';
+
+      debugPrint('FFmpeg command: $command');
+
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+
+      if (ReturnCode.isSuccess(returnCode)) {
+        debugPrint('Video flipped successfully: $outputPath');
+
+        // Verify output file was created and has content
+        final outputFile = File(outputPath);
+        if (await outputFile.exists() && await outputFile.length() > 0) {
+          // Delete the original video file
+          try {
+            await File(inputPath).delete();
+            debugPrint('Original video deleted: $inputPath');
+          } catch (e) {
+            debugPrint('Failed to delete original video: $e');
+          }
+
+          return outputPath;
+        } else {
+          debugPrint('Output file was not created or is empty');
+          return null;
+        }
+      } else {
+        debugPrint('FFmpeg failed with return code: $returnCode');
+        final logs = await session.getLogs();
+        for (final log in logs) {
+          debugPrint('FFmpeg log: ${log.getMessage()}');
+        }
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error flipping video: $e');
+      return null;
+    }
+  }
+
   Future<void> _takePicture() async {
     final CameraController? cameraController = _controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
@@ -282,8 +414,29 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
     try {
       final XFile image = await cameraController.takePicture();
-      _lastImagePath = image.path;
-      await widget.onImageCaptured?.call(image.path);
+      String finalImagePath = image.path;
+
+      // Flip front camera images for both iOS and Android
+      // This ensures the captured image matches what users see in the preview
+      if (_isUsingFrontCamera) {
+        try {
+          final Uint8List imageBytes = await image.readAsBytes();
+          final Uint8List flippedBytes =
+              await _flipImageHorizontally(imageBytes);
+          finalImagePath = await _saveFlippedImage(flippedBytes, image.path);
+
+          // Delete the original unflipped image
+          await File(image.path).delete();
+        } catch (e) {
+          debugPrint('Failed to flip image, using original: $e');
+          // If flipping fails, use the original image
+          finalImagePath = image.path;
+        }
+      }
+
+      _lastImagePath = finalImagePath;
+      // Pass both the image path and camera info to the callback
+      await widget.onImageCaptured?.call(finalImagePath, _isUsingFrontCamera);
 
       if (mounted) {
         setState(() {
@@ -363,8 +516,43 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
     try {
       final XFile video = await cameraController.stopVideoRecording();
-      _lastVideoPath = video.path;
-      await widget.onVideoCaptured?.call(video.path);
+      String finalVideoPath = video.path;
+
+      // Process Android front camera videos with FFmpeg
+      if (_shouldFlipVideo()) {
+        debugPrint('Processing Android front camera video with FFmpeg...');
+
+        // Show processing indicator
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Processing video...',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      fontFamily: 'Readex Pro',
+                      color: FlutterFlowTheme.of(context).info,
+                    ),
+              ),
+              backgroundColor: FlutterFlowTheme.of(context).primary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+
+        final String? flippedVideoPath =
+            await _flipVideoHorizontally(finalVideoPath);
+        if (flippedVideoPath != null) {
+          finalVideoPath = flippedVideoPath;
+          debugPrint('Video successfully flipped: $finalVideoPath');
+        } else {
+          debugPrint('Failed to flip video, using original');
+          // If flipping fails, use the original video
+        }
+      }
+
+      _lastVideoPath = finalVideoPath;
+      // Pass both the video path and camera info to the callback
+      await widget.onVideoCaptured?.call(finalVideoPath, _isUsingFrontCamera);
 
       _recordingTimer?.cancel();
 

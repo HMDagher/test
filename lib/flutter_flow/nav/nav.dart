@@ -3,13 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '/backend/schema/structs/index.dart';
-
 import '/flutter_flow/flutter_flow_util.dart';
 
 import '/index.dart';
-import 'package:utility_functions_library_8g4bud/index.dart'
-    as $utility_functions_library_8g4bud;
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -32,57 +28,44 @@ class AppStateNotifier extends ChangeNotifier {
   }
 }
 
-GoRouter createRouter(AppStateNotifier appStateNotifier) {
-  $utility_functions_library_8g4bud.initializeRoutes(
-    testPageWidgetName: 'utility_functions_library_8g4bud.TestPage',
-    testPageWidgetPath: '/testUtilityPage',
-  );
-
-  return GoRouter(
-    initialLocation: '/',
-    debugLogDiagnostics: true,
-    refreshListenable: appStateNotifier,
-    navigatorKey: appNavigatorKey,
-    errorBuilder: (context, state) => HomePageWidget(),
-    routes: [
-      FFRoute(
-        name: '_initialize',
-        path: '/',
-        builder: (context, _) => HomePageWidget(),
-      ),
-      FFRoute(
-        name: HomePageWidget.routeName,
-        path: HomePageWidget.routePath,
-        builder: (context, params) => HomePageWidget(),
-      ),
-      FFRoute(
-        name: CameraCustomPageWidget.routeName,
-        path: CameraCustomPageWidget.routePath,
-        builder: (context, params) => CameraCustomPageWidget(),
-      ),
-      FFRoute(
-        name: PreviewWidget.routeName,
-        path: PreviewWidget.routePath,
-        builder: (context, params) => PreviewWidget(
-          filePath: params.getParam(
-            'filePath',
-            ParamType.String,
-          ),
-          mediaType: params.getParam(
-            'mediaType',
-            ParamType.String,
-          ),
+GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
+      initialLocation: '/',
+      debugLogDiagnostics: true,
+      refreshListenable: appStateNotifier,
+      navigatorKey: appNavigatorKey,
+      errorBuilder: (context, state) => HomePageWidget(),
+      routes: [
+        FFRoute(
+          name: '_initialize',
+          path: '/',
+          builder: (context, _) => HomePageWidget(),
         ),
-      ),
-      FFRoute(
-        name: $utility_functions_library_8g4bud.TestPageWidget.routeName,
-        path: $utility_functions_library_8g4bud.TestPageWidget.routePath,
-        builder: (context, params) =>
-            $utility_functions_library_8g4bud.TestPageWidget(),
-      )
-    ].map((r) => r.toRoute(appStateNotifier)).toList(),
-  );
-}
+        FFRoute(
+          name: HomePageWidget.routeName,
+          path: HomePageWidget.routePath,
+          builder: (context, params) => HomePageWidget(),
+        ),
+        FFRoute(
+          name: CameraCustomPageWidget.routeName,
+          path: CameraCustomPageWidget.routePath,
+          builder: (context, params) => CameraCustomPageWidget(),
+        ),
+        FFRoute(
+          name: PreviewWidget.routeName,
+          path: PreviewWidget.routePath,
+          builder: (context, params) => PreviewWidget(
+            filePath: params.getParam(
+              'filePath',
+              ParamType.String,
+            ),
+            mediaType: params.getParam(
+              'mediaType',
+              ParamType.String,
+            ),
+          ),
+        )
+      ].map((r) => r.toRoute(appStateNotifier)).toList(),
+    );
 
 extension NavParamExtensions on Map<String, String?> {
   Map<String, String> get withoutNulls => Map.fromEntries(
@@ -151,7 +134,6 @@ class FFParameters {
     String paramName,
     ParamType type, {
     bool isList = false,
-    StructBuilder<T>? structBuilder,
   }) {
     if (futureParamValues.containsKey(paramName)) {
       return futureParamValues[paramName];
@@ -169,7 +151,6 @@ class FFParameters {
       param,
       type,
       isList,
-      structBuilder: structBuilder,
     );
   }
 }
