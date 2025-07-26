@@ -287,6 +287,19 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       ),
                     ),
                   ),
+                  Padding(
+                    padding:
+                        EdgeInsetsDirectional.fromSTEB(0.0, 50.0, 0.0, 0.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8.0),
+                      child: Image.network(
+                        'https://picsum.photos/seed/189/600',
+                        width: 200.0,
+                        height: 200.0,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -51,25 +51,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => CameraCustomPageWidget(),
         ),
         FFRoute(
-          name: PreviewWidget.routeName,
-          path: PreviewWidget.routePath,
-          builder: (context, params) => PreviewWidget(
-            filePath: params.getParam(
-              'filePath',
-              ParamType.String,
-            ),
-            mediaType: params.getParam(
-              'mediaType',
-              ParamType.String,
-            ),
-          ),
-        ),
-        FFRoute(
           name: ImageEditorPageWidget.routeName,
           path: ImageEditorPageWidget.routePath,
           builder: (context, params) => ImageEditorPageWidget(
             imagePath: params.getParam(
               'imagePath',
+              ParamType.String,
+            ),
+          ),
+        ),
+        FFRoute(
+          name: VideoEditorPageWidget.routeName,
+          path: VideoEditorPageWidget.routePath,
+          builder: (context, params) => VideoEditorPageWidget(
+            videoPath: params.getParam(
+              'videoPath',
               ParamType.String,
             ),
           ),

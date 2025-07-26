@@ -75,14 +75,10 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
               },
               onVideoCaptured: (videoPath, isFrontCamera) async {
                 context.pushNamed(
-                  PreviewWidget.routeName,
+                  VideoEditorPageWidget.routeName,
                   queryParameters: {
-                    'filePath': serializeParam(
+                    'videoPath': serializeParam(
                       videoPath,
-                      ParamType.String,
-                    ),
-                    'mediaType': serializeParam(
-                      'video',
                       ParamType.String,
                     ),
                   }.withoutNulls,
