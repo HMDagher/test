@@ -9,11 +9,11 @@ class VideoEditorPageWidget extends StatefulWidget {
   const VideoEditorPageWidget({
     super.key,
     this.videoPath,
-    String? mediaType,
-  }) : this.mediaType = mediaType ?? 'video';
+    this.isFrontCamera,
+  });
 
   final String? videoPath;
-  final String mediaType;
+  final bool? isFrontCamera;
 
   static String routeName = 'VideoEditorPage';
   static String routePath = '/videoEditorPage';
@@ -55,11 +55,14 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
           child: Container(
             width: double.infinity,
             height: double.infinity,
-            child: custom_widgets.MediaPreviewIosWidget(
+            child: custom_widgets.VideoEditorWidget(
               width: double.infinity,
               height: double.infinity,
-              filePath: widget.videoPath!,
-              mediaType: widget.mediaType,
+              videoPath: widget.videoPath,
+              isFrontCamera: widget.isFrontCamera,
+              isAndroid: isAndroid,
+              onVideoEdited: (editedVideoPath) async {},
+              onError: (error) async {},
             ),
           ),
         ),

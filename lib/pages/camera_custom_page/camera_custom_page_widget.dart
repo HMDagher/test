@@ -81,6 +81,10 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
                       videoPath,
                       ParamType.String,
                     ),
+                    'isFrontCamera': serializeParam(
+                      isFrontCamera,
+                      ParamType.bool,
+                    ),
                   }.withoutNulls,
                 );
               },
