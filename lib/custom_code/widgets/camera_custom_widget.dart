@@ -17,8 +17,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path/path.dart' as path;
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:ffmpeg_kit_flutter_minimal/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_minimal/return_code.dart';
+import 'package:ffmpeg_kit_flutter_minimal/ffmpeg_kit_config.dart';
 
 // Data class to hold captured media information
 class CapturedMediaInfo {
@@ -365,36 +366,50 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
       debugPrint('FFmpeg command: $command');
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
+      // Use executeAsync for better performance and error handling
+      final Completer<String?> completer = Completer<String?>();
 
-      if (ReturnCode.isSuccess(returnCode)) {
-        debugPrint('Video flipped successfully: $outputPath');
+      await FFmpegKit.executeAsync(
+        command,
+        (session) async {
+          final returnCode = await session.getReturnCode();
 
-        // Verify output file was created and has content
-        final outputFile = File(outputPath);
-        if (await outputFile.exists() && await outputFile.length() > 0) {
-          // Delete the original video file
-          try {
-            await File(inputPath).delete();
-            debugPrint('Original video deleted: $inputPath');
-          } catch (e) {
-            debugPrint('Failed to delete original video: $e');
+          if (ReturnCode.isSuccess(returnCode)) {
+            debugPrint('Video flipped successfully: $outputPath');
+
+            // Verify output file was created and has content
+            final outputFile = File(outputPath);
+            if (await outputFile.exists() && await outputFile.length() > 0) {
+              // Delete the original video file
+              try {
+                await File(inputPath).delete();
+                debugPrint('Original video deleted: $inputPath');
+              } catch (e) {
+                debugPrint('Failed to delete original video: $e');
+              }
+
+              completer.complete(outputPath);
+            } else {
+              debugPrint('Output file was not created or is empty');
+              completer.complete(null);
+            }
+          } else {
+            debugPrint(
+                'FFmpeg failed with return code: ${returnCode?.getValue() ?? 'unknown'}');
+            completer.complete(null);
           }
-
-          return outputPath;
-        } else {
-          debugPrint('Output file was not created or is empty');
-          return null;
-        }
-      } else {
-        debugPrint('FFmpeg failed with return code: $returnCode');
-        final logs = await session.getLogs();
-        for (final log in logs) {
+        },
+        (log) {
+          // Log FFmpeg output for debugging
           debugPrint('FFmpeg log: ${log.getMessage()}');
-        }
-        return null;
-      }
+        },
+        (statistics) {
+          // Optional: Handle progress statistics
+          debugPrint('FFmpeg progress: ${statistics.getTime()} ms');
+        },
+      );
+
+      return await completer.future;
     } catch (e) {
       debugPrint('Error flipping video: $e');
       return null;

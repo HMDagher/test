@@ -68,6 +68,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               'videoPath',
               ParamType.String,
             ),
+            mediaType: params.getParam(
+              'mediaType',
+              ParamType.String,
+            ),
           ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
