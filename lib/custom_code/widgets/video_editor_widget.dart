@@ -9,13 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:easy_video_editor/easy_video_editor.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class VideoEditorWidget extends StatefulWidget {
   const VideoEditorWidget({
     super.key,
     this.width,
     this.height,
-    this.videoPath,
+    this.videoFile,
     this.isFrontCamera,
     this.isAndroid,
     this.onVideoEdited,
@@ -24,10 +25,10 @@ class VideoEditorWidget extends StatefulWidget {
 
   final double? width;
   final double? height;
-  final String? videoPath; // Video path from camera widget
+  final FFUploadedFile? videoFile; // Video file from camera widget
   final bool? isFrontCamera; // Whether video was captured with front camera
   final bool? isAndroid; // Whether running on Android platform
-  final Future<dynamic> Function(String editedVideoPath)? onVideoEdited;
+  final Future<dynamic> Function(FFUploadedFile editedVideoFile)? onVideoEdited;
   final Future<dynamic> Function(String error)? onError;
 
   @override
@@ -38,7 +39,8 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   VideoPlayerController? _videoController;
   bool _isProcessing = false;
   double _processingProgress = 0.0;
-  String? _processedVideoPath;
+  FFUploadedFile? _processedVideoFile;
+  File? _tempVideoFile;
 
   // Auto-flip detection
   bool _shouldAutoFlip = false;
@@ -46,7 +48,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.videoPath != null) {
+    if (widget.videoFile != null) {
       _initializeVideo();
     }
   }
@@ -54,7 +56,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   @override
   void didUpdateWidget(VideoEditorWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.videoPath != oldWidget.videoPath && widget.videoPath != null) {
+    if (widget.videoFile != oldWidget.videoFile && widget.videoFile != null) {
       _initializeVideo();
     }
   }
@@ -62,17 +64,31 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   @override
   void dispose() {
     _videoController?.dispose();
+    _cleanupTempFile();
     super.dispose();
   }
 
+  Future<void> _cleanupTempFile() async {
+    if (_tempVideoFile != null && await _tempVideoFile!.exists()) {
+      try {
+        await _tempVideoFile!.delete();
+      } catch (e) {
+        debugPrint('Failed to cleanup temp video file: $e');
+      }
+    }
+  }
+
   Future<void> _initializeVideo() async {
-    if (widget.videoPath == null) return;
+    if (widget.videoFile == null || widget.videoFile!.bytes == null) return;
 
     setState(() {
       _isProcessing = true;
     });
 
     try {
+      // Create temporary file from bytes
+      await _createTempVideoFile();
+
       // Determine if video should be flipped (Android front camera only)
       _shouldAutoFlip = _shouldFlipVideo();
 
@@ -80,8 +96,8 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
         // Process the video (flip it)
         await _processVideo();
       } else {
-        // Use original video
-        _processedVideoPath = widget.videoPath!;
+        // Use original video file
+        _processedVideoFile = widget.videoFile!;
         await _initializeVideoPlayer();
       }
     } catch (e) {
@@ -90,6 +106,14 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
       });
       _handleError('Error initializing video: $e');
     }
+  }
+
+  Future<void> _createTempVideoFile() async {
+    final Directory tempDir = Directory.systemTemp;
+    final String fileName =
+        'temp_video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+    _tempVideoFile = File('${tempDir.path}/$fileName');
+    await _tempVideoFile!.writeAsBytes(widget.videoFile!.bytes!);
   }
 
   bool _shouldFlipVideo() {
@@ -101,10 +125,10 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   }
 
   Future<void> _processVideo() async {
-    if (widget.videoPath == null) return;
+    if (_tempVideoFile == null) return;
 
     try {
-      final editor = VideoEditorBuilder(videoPath: widget.videoPath!)
+      final editor = VideoEditorBuilder(videoPath: _tempVideoFile!.path)
           .flip(flipDirection: FlipDirection.horizontal);
 
       // Export with progress tracking
@@ -120,23 +144,43 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
         throw Exception('Failed to process video - output path is null');
       }
 
-      _processedVideoPath = outputPath;
+      // Read processed video as bytes and create FFUploadedFile
+      final processedFile = File(outputPath);
+      final processedBytes = await processedFile.readAsBytes();
+
+      _processedVideoFile = FFUploadedFile(
+        name: 'processed_video_${DateTime.now().millisecondsSinceEpoch}.mp4',
+        bytes: processedBytes,
+      );
+
+      // Clean up the processed file
+      try {
+        await processedFile.delete();
+      } catch (e) {
+        debugPrint('Failed to delete processed video file: $e');
+      }
+
       await _initializeVideoPlayer();
 
-      // Call the callback with the processed video path
-      await widget.onVideoEdited?.call(outputPath);
+      // Call the callback with the processed video file
+      await widget.onVideoEdited?.call(_processedVideoFile!);
     } catch (e) {
       throw Exception('Video processing failed: $e');
     }
   }
 
   Future<void> _initializeVideoPlayer() async {
-    if (_processedVideoPath == null) return;
+    if (_processedVideoFile == null ||
+        _processedVideoFile!.bytes == null ||
+        _tempVideoFile == null) return;
 
     try {
+      // Write processed bytes to temp file for video player
+      await _tempVideoFile!.writeAsBytes(_processedVideoFile!.bytes!);
+
       // Initialize video player with processed video
       _videoController?.dispose();
-      _videoController = VideoPlayerController.file(File(_processedVideoPath!));
+      _videoController = VideoPlayerController.file(_tempVideoFile!);
       await _videoController!.initialize();
       await _videoController!.setLooping(true);
       await _videoController!.play();
@@ -147,7 +191,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
 
       // If no flipping was needed, still call the callback
       if (!_shouldAutoFlip) {
-        await widget.onVideoEdited?.call(_processedVideoPath!);
+        await widget.onVideoEdited?.call(_processedVideoFile!);
       }
     } catch (e) {
       throw Exception('Video player initialization failed: $e');
@@ -166,7 +210,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.videoPath == null) {
+    if (widget.videoFile == null || widget.videoFile!.bytes == null) {
       return Container(
         width: widget.width,
         height: widget.height,

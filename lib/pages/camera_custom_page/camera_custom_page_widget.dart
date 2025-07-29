@@ -62,24 +62,24 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
               showCameraSwitchButton: true,
               borderRadius: 12.0,
               isAndroid: isAndroid,
-              onImageCaptured: (imagePath, isFrontCamera) async {
+              onImageCaptured: (imageFile) async {
                 context.pushNamed(
                   ImageEditorPageWidget.routeName,
                   queryParameters: {
                     'imagePath': serializeParam(
-                      imagePath,
-                      ParamType.String,
+                      imageFile,
+                      ParamType.FFUploadedFile,
                     ),
                   }.withoutNulls,
                 );
               },
-              onVideoCaptured: (videoPath, isFrontCamera) async {
+              onVideoCaptured: (videoFile, isFrontCamera) async {
                 context.pushNamed(
                   VideoEditorPageWidget.routeName,
                   queryParameters: {
                     'videoPath': serializeParam(
-                      videoPath,
-                      ParamType.String,
+                      videoFile,
+                      ParamType.FFUploadedFile,
                     ),
                     'isFrontCamera': serializeParam(
                       isFrontCamera,

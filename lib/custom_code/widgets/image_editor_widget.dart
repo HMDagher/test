@@ -15,15 +15,16 @@ class ImageEditorWidget extends StatefulWidget {
     super.key,
     this.width,
     this.height,
-    this.imagePath,
+    this.imageFile,
     this.onImageEditingComplete,
     this.onCloseEditor,
   });
 
   final double? width;
   final double? height;
-  final String? imagePath;
-  final Future<dynamic> Function(String imagePath)? onImageEditingComplete;
+  final FFUploadedFile? imageFile;
+  final Future<dynamic> Function(FFUploadedFile imageFile)?
+      onImageEditingComplete;
   final Future<dynamic> Function()? onCloseEditor;
 
   @override
@@ -42,15 +43,14 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
   Future<void> onImageEditingComplete(Uint8List bytes) async {
     if (widget.onImageEditingComplete != null) {
       try {
-        final Directory tempDir = Directory.systemTemp;
-        final String fileName =
-            'edited_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final File tempFile = File('${tempDir.path}/$fileName');
-        await tempFile.writeAsBytes(bytes);
-
-        await widget.onImageEditingComplete!(tempFile.path);
+        // Create FFUploadedFile from edited bytes
+        final FFUploadedFile editedFile = FFUploadedFile(
+          name: 'edited_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          bytes: bytes,
+        );
+        await widget.onImageEditingComplete!(editedFile);
       } catch (e) {
-        debugPrint('Error saving edited image: $e');
+        debugPrint('Error processing edited image: $e');
       }
     }
   }
@@ -71,13 +71,14 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.imagePath == null || widget.imagePath!.isEmpty) {
+    if (widget.imageFile == null ||
+        widget.imageFile!.bytes == null ||
+        widget.imageFile!.bytes!.isEmpty) {
       return Container(
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
           color: Colors.black,
-          borderRadius: BorderRadius.circular(20),
         ),
         clipBehavior: Clip.antiAlias,
         child: Center(
@@ -118,11 +119,10 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
       height: widget.height,
       decoration: BoxDecoration(
         color: Colors.black, // Full black background
-        borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
-      child: ProImageEditor.file(
-        File(widget.imagePath!),
+      child: ProImageEditor.memory(
+        widget.imageFile!.bytes!,
         key: editorKey,
         callbacks: ProImageEditorCallbacks(
           onImageEditingStarted: onImageEditingStarted,
@@ -143,8 +143,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           mainEditor: const MainEditorConfigs(
             style: MainEditorStyle(
               background: Color(0xFF000000), // Full black background
-              bottomBarBackground:
-                  Color(0xCC1A1A1A), // Dark gray with better visibility
+              bottomBarBackground: Color(0xFF000000), // Same black as container
             ),
             icons: MainEditorIcons(
               closeEditor: Icons.close,
@@ -159,8 +158,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             style: PaintEditorStyle(
               background: Color(0xFF000000),
-              bottomBarBackground:
-                  Color(0xCC1A1A1A), // Dark gray with better visibility
+              bottomBarBackground: Color(0xFF000000), // Same black as container
               initialStrokeWidth: 5.0,
               initialColor: Colors.white,
             ),
@@ -180,8 +178,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             style: const TextEditorStyle(
               background: Color(0xFF000000),
-              bottomBarBackground:
-                  Color(0xCC1A1A1A), // Dark gray with better visibility
+              bottomBarBackground: Color(0xFF000000), // Same black as container
             ),
             icons: const TextEditorIcons(
               bottomNavBar: Icons.text_fields,
@@ -197,8 +194,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             style: CropRotateEditorStyle(
               background: Color(0xFF000000),
-              bottomBarBackground:
-                  Color(0xCC1A1A1A), // Dark gray with better visibility
+              bottomBarBackground: Color(0xFF000000), // Same black as container
               cropCornerColor: Colors.white,
               helperLineColor: Colors.white54,
             ),
@@ -213,7 +209,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           filterEditor: FilterEditorConfigs(
             enabled: true,
             style: const FilterEditorStyle(
-              background: Color(0xCC1A1A1A), // Dark gray with better visibility
+              background: Color(0xFF000000), // Same black as container
               filterListMargin: EdgeInsets.all(8),
             ),
             icons: const FilterEditorIcons(
@@ -227,7 +223,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             checkPlatformCompatibility: !kIsWeb,
             style: EmojiEditorStyle(
               backgroundColor:
-                  const Color(0xCC1A1A1A), // Dark gray with better visibility
+                  const Color(0xFF000000), // Same black as container
               textStyle: DefaultEmojiTextStyle.copyWith(
                 fontSize: _useMaterialDesign ? 48 : 30,
               ),
@@ -237,7 +233,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                   maxHeight: MediaQuery.of(context).size.height,
                 )),
                 backgroundColor:
-                    const Color(0xCC1A1A1A), // Dark gray with better visibility
+                    const Color(0xFF000000), // Same black as container
                 buttonMode: _useMaterialDesign
                     ? ButtonMode.MATERIAL
                     : ButtonMode.CUPERTINO,
