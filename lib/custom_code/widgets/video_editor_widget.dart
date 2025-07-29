@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-import 'index.dart'; // Imports other custom widgets
 import 'package:easy_video_editor/easy_video_editor.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
@@ -179,7 +178,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
               Icon(
                 Icons.video_library_outlined,
                 size: 64,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
@@ -194,7 +193,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
                 'Record a video using the camera',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
                       fontFamily: 'Readex Pro',
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -212,17 +211,21 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
         children: [
           // Full-screen video preview
           if (_videoController != null && _videoController!.value.isInitialized)
-            Center(
-              child: AspectRatio(
-                aspectRatio: _videoController!.value.aspectRatio,
-                child: VideoPlayer(_videoController!),
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
               ),
             ),
 
           // Processing overlay
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.8),
+              color: Colors.black.withValues(alpha: 0.8),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +250,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
                         width: 200,
                         child: LinearProgressIndicator(
                           value: _processingProgress,
-                          backgroundColor: Colors.white.withOpacity(0.3),
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
                           valueColor:
                               const AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
@@ -257,7 +260,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
                         '${(_processingProgress * 100).toStringAsFixed(0)}%',
                         style: FlutterFlowTheme.of(context).bodySmall.override(
                               fontFamily: 'Readex Pro',
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                             ),
                       ),
                     ],
