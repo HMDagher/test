@@ -170,7 +170,11 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
       return Container(
         width: widget.width,
         height: widget.height,
-        color: Colors.black,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -206,7 +210,11 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
     return Container(
       width: widget.width,
       height: widget.height,
-      color: Colors.black,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           // Full-screen video preview

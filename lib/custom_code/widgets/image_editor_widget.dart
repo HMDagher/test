@@ -75,7 +75,11 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
       return Container(
         width: widget.width,
         height: widget.height,
-        color: Colors.black,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -112,7 +116,11 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
     return Container(
       width: widget.width,
       height: widget.height,
-      color: Colors.black, // Full black background
+      decoration: BoxDecoration(
+        color: Colors.black, // Full black background
+        borderRadius: BorderRadius.circular(20),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: ProImageEditor.file(
         File(widget.imagePath!),
         key: editorKey,
@@ -135,8 +143,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           mainEditor: const MainEditorConfigs(
             style: MainEditorStyle(
               background: Color(0xFF000000), // Full black background
-              bottomBarBackground: Color(
-                  0x99000000), // More transparent for frosted glass effect
+              bottomBarBackground:
+                  Color(0xCC1A1A1A), // Dark gray with better visibility
             ),
             icons: MainEditorIcons(
               closeEditor: Icons.close,
@@ -151,7 +159,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             style: PaintEditorStyle(
               background: Color(0xFF000000),
-              bottomBarBackground: Color(0x99000000), // More transparent
+              bottomBarBackground:
+                  Color(0xCC1A1A1A), // Dark gray with better visibility
               initialStrokeWidth: 5.0,
               initialColor: Colors.white,
             ),
@@ -171,7 +180,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             style: const TextEditorStyle(
               background: Color(0xFF000000),
-              bottomBarBackground: Color(0x99000000), // More transparent
+              bottomBarBackground:
+                  Color(0xCC1A1A1A), // Dark gray with better visibility
             ),
             icons: const TextEditorIcons(
               bottomNavBar: Icons.text_fields,
@@ -187,7 +197,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             style: CropRotateEditorStyle(
               background: Color(0xFF000000),
-              bottomBarBackground: Color(0x99000000), // More transparent
+              bottomBarBackground:
+                  Color(0xCC1A1A1A), // Dark gray with better visibility
               cropCornerColor: Colors.white,
               helperLineColor: Colors.white54,
             ),
@@ -202,7 +213,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           filterEditor: FilterEditorConfigs(
             enabled: true,
             style: const FilterEditorStyle(
-              background: Color(0x99000000), // More transparent
+              background: Color(0xCC1A1A1A), // Dark gray with better visibility
               filterListMargin: EdgeInsets.all(8),
             ),
             icons: const FilterEditorIcons(
@@ -215,7 +226,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             enabled: true,
             checkPlatformCompatibility: !kIsWeb,
             style: EmojiEditorStyle(
-              backgroundColor: const Color(0x99000000), // More transparent
+              backgroundColor:
+                  const Color(0xCC1A1A1A), // Dark gray with better visibility
               textStyle: DefaultEmojiTextStyle.copyWith(
                 fontSize: _useMaterialDesign ? 48 : 30,
               ),
@@ -224,7 +236,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                   maxWidth: MediaQuery.of(context).size.width,
                   maxHeight: MediaQuery.of(context).size.height,
                 )),
-                backgroundColor: const Color(0x99000000), // More transparent
+                backgroundColor:
+                    const Color(0xCC1A1A1A), // Dark gray with better visibility
                 buttonMode: _useMaterialDesign
                     ? ButtonMode.MATERIAL
                     : ButtonMode.CUPERTINO,
