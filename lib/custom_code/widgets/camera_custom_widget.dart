@@ -680,10 +680,10 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.5),
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
@@ -715,10 +715,10 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: Colors.white.withValues(alpha: 0.2),
               width: 1,
             ),
             boxShadow: [
@@ -805,10 +805,10 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: Colors.white.withValues(alpha: 0.4),
                       width: 2,
                     ),
                     boxShadow: [
@@ -954,10 +954,10 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: Colors.black.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Colors.white.withValues(alpha: 0.3),
                 width: 1,
               ),
               boxShadow: [
@@ -988,7 +988,11 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     return Container(
       width: widget.width,
       height: widget.height,
-      color: Colors.black, // Full black background
+      decoration: BoxDecoration(
+        color: Colors.black, // Full black background
+        borderRadius: BorderRadius.circular(20),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
