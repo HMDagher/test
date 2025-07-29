@@ -6,13 +6,8 @@ import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-import 'index.dart'; // Imports other custom widgets
-
-import 'index.dart'; // Imports other custom widgets
-
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -49,19 +44,6 @@ FlashMode _convertFlashMode(String mode) {
       return FlashMode.torch;
     default:
       return FlashMode.auto;
-  }
-}
-
-String _convertFromFlashMode(FlashMode mode) {
-  switch (mode) {
-    case FlashMode.off:
-      return 'off';
-    case FlashMode.auto:
-      return 'auto';
-    case FlashMode.always:
-      return 'always';
-    case FlashMode.torch:
-      return 'torch';
   }
 }
 
@@ -135,9 +117,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
   int _selectedCameraIndex = 0;
   bool _isInitialized = false;
   bool _isRecording = false;
-  bool _isRecordingPaused = false;
-  String? _lastImagePath;
-  String? _lastVideoPath;
   VideoPlayerController? _videoController;
 
   // Recording timer and progress
@@ -330,12 +309,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     return newPath;
   }
 
-  // Helper function to check if media is from front camera based on filename
-  static bool isFromFrontCamera(String filePath) {
-    final String filename = path.basename(filePath);
-    return filename.contains('_front_') || filename.contains('front_flipped');
-  }
-
   Future<void> _takePicture() async {
     final CameraController? cameraController = _controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
@@ -369,18 +342,10 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         }
       }
 
-      _lastImagePath = finalImagePath;
       // Pass both the image path and camera info to the callback
       await widget.onImageCaptured?.call(finalImagePath, _isUsingFrontCamera);
 
       if (mounted) {
-        setState(() {
-          // Clear previous captures
-          _lastImagePath = null;
-          _lastVideoPath = null;
-          _videoController?.dispose();
-          _videoController = null;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -453,7 +418,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       final XFile video = await cameraController.stopVideoRecording();
       final String finalVideoPath = video.path;
 
-      _lastVideoPath = finalVideoPath;
       // Pass both the video path and camera info to the callback
       await widget.onVideoCaptured?.call(finalVideoPath, _isUsingFrontCamera);
 
@@ -462,13 +426,7 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       if (mounted) {
         setState(() {
           _isRecording = false;
-          _isRecordingPaused = false;
           _recordingSeconds = 0;
-          // Clear previous captures
-          _lastImagePath = null;
-          _lastVideoPath = null;
-          _videoController?.dispose();
-          _videoController = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -485,26 +443,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       }
     } catch (e) {
       _handleError('Failed to stop video recording: $e');
-    }
-  }
-
-  Future<void> _initializeVideoPlayer(String videoPath) async {
-    _videoController?.dispose();
-
-    final VideoPlayerController controller = kIsWeb
-        ? VideoPlayerController.networkUrl(Uri.parse(videoPath))
-        : VideoPlayerController.file(File(videoPath));
-
-    _videoController = controller;
-
-    try {
-      await controller.initialize();
-      await controller.setLooping(true);
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      _handleError('Failed to initialize video player: $e');
     }
   }
 
@@ -525,28 +463,9 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     await _initializeCameraController(_cameras[_selectedCameraIndex]);
   }
 
-  Future<void> _switchBackCameraLens() async {
-    if (_backCameras.length <= 1 || _isUsingFrontCamera) return;
-
-    _currentBackCameraIndex =
-        (_currentBackCameraIndex + 1) % _backCameras.length;
-    _selectedCameraIndex =
-        _cameras.indexOf(_backCameras[_currentBackCameraIndex]);
-    await _initializeCameraController(_cameras[_selectedCameraIndex]);
-  }
-
   IconData _getCameraIcon() {
-    if (_cameras.isEmpty) return Icons.camera_alt;
-
-    final currentCamera = _cameras[_selectedCameraIndex];
-    switch (currentCamera.lensDirection) {
-      case CameraLensDirection.front:
-        return Icons.camera_front;
-      case CameraLensDirection.back:
-        return Icons.camera_rear;
-      case CameraLensDirection.external:
-        return Icons.camera;
-    }
+    // Always use the refresh/sync icon for camera switching
+    return Icons.sync;
   }
 
   Future<void> _toggleFlashMode() async {
@@ -639,6 +558,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
   Widget _buildCameraPreview() {
     if (!_isInitialized || _controller == null) {
       return Container(
+        width: double.infinity,
+        height: double.infinity,
         color: Colors.black,
         child: const Center(
           child: CircularProgressIndicator(color: Colors.white),
@@ -646,20 +567,30 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       );
     }
 
-    return Listener(
-      onPointerDown: (_) => _pointers++,
-      onPointerUp: (_) => _pointers--,
-      child: CameraPreview(
-        _controller!,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onScaleStart: _handleScaleStart,
-              onScaleUpdate: _handleScaleUpdate,
-              onTapDown: (details) => _onViewFinderTap(details, constraints),
-            );
-          },
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _controller!.value.previewSize?.height ?? 1,
+          height: _controller!.value.previewSize?.width ?? 1,
+          child: Listener(
+            onPointerDown: (_) => _pointers++,
+            onPointerUp: (_) => _pointers--,
+            child: CameraPreview(
+              _controller!,
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onScaleStart: _handleScaleStart,
+                    onScaleUpdate: _handleScaleUpdate,
+                    onTapDown: (details) =>
+                        _onViewFinderTap(details, constraints),
+                  );
+                },
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -672,57 +603,64 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
-        padding: const EdgeInsets.all(30),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.black.withOpacity(0.8),
-              Colors.transparent,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Zoom lens switcher for back cameras
-              if (!_isUsingFrontCamera && _backCameras.length > 1)
-                _buildZoomLensSwitcher(),
-
-              const SizedBox(height: 20),
-
-              // Main controls row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Flash control (left side)
-                  if (widget.showFlashControls)
-                    _buildSideControlButton(
-                      icon: _getFlashIcon(),
-                      onPressed: _toggleFlashMode,
-                    )
-                  else
-                    const SizedBox(width: 50),
-
-                  // Main capture button (center)
-                  _buildInstagramStyleCaptureButton(),
-
-                  // Camera switch (right side)
-                  if ((_backCameras.isNotEmpty && _frontCameras.isNotEmpty) &&
-                      widget.showCameraSwitchButton)
-                    _buildSideControlButton(
-                      icon: _getCameraIcon(),
-                      onPressed: _switchCamera,
-                    )
-                  else
-                    const SizedBox(width: 50),
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.6),
+                  Colors.black.withValues(alpha: 0.3),
+                  Colors.transparent,
                 ],
               ),
-            ],
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Zoom lens switcher for back cameras
+                  if (!_isUsingFrontCamera && _backCameras.length > 1)
+                    _buildZoomLensSwitcher(),
+
+                  const SizedBox(height: 16),
+
+                  // Main controls row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Flash control (left side)
+                      if (widget.showFlashControls)
+                        _buildSideControlButton(
+                          icon: _getFlashIcon(),
+                          onPressed: _toggleFlashMode,
+                        )
+                      else
+                        const SizedBox(width: 44),
+
+                      // Main capture button (center)
+                      _buildInstagramStyleCaptureButton(),
+
+                      // Camera switch (right side)
+                      if ((_backCameras.isNotEmpty &&
+                              _frontCameras.isNotEmpty) &&
+                          widget.showCameraSwitchButton)
+                        _buildSideControlButton(
+                          icon: _getCameraIcon(),
+                          onPressed: _switchCamera,
+                        )
+                      else
+                        const SizedBox(width: 44),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -734,74 +672,107 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     required VoidCallback onPressed,
     Color? color,
   }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(
+              icon,
+              color: color ?? Colors.white,
+              size: 20,
+            ),
+            onPressed: onPressed,
+          ),
         ),
-      ),
-      child: IconButton(
-        icon: Icon(
-          icon,
-          color: color ?? Colors.white,
-          size: 24,
-        ),
-        onPressed: onPressed,
       ),
     );
   }
 
   Widget _buildZoomLensSwitcher() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: _backCameras.asMap().entries.map((entry) {
-          final index = entry.key;
-          final camera = entry.value;
-          final isSelected = index == _currentBackCameraIndex;
-
-          // Generate zoom labels (1x, 2x, 3x, etc.)
-          final zoomLabel = '${index + 1}x';
-
-          return GestureDetector(
-            onTap: () async {
-              if (index != _currentBackCameraIndex) {
-                _currentBackCameraIndex = index;
-                _selectedCameraIndex = _cameras.indexOf(camera);
-                await _initializeCameraController(camera);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withOpacity(0.3)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                zoomLabel,
-                style: TextStyle(
-                  color:
-                      isSelected ? Colors.white : Colors.white.withOpacity(0.7),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
-                ),
-              ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
             ),
-          );
-        }).toList(),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _backCameras.asMap().entries.map((entry) {
+              final index = entry.key;
+              final camera = entry.value;
+              final isSelected = index == _currentBackCameraIndex;
+
+              // Generate zoom labels (1x, 2x, 3x, etc.)
+              final zoomLabel = '${index + 1}x';
+
+              return GestureDetector(
+                onTap: () async {
+                  if (index != _currentBackCameraIndex) {
+                    _currentBackCameraIndex = index;
+                    _selectedCameraIndex = _cameras.indexOf(camera);
+                    await _initializeCameraController(camera);
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    zoomLabel,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.8),
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -820,34 +791,67 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         }
       },
       child: Container(
-        width: 80,
-        height: 80,
+        width: 72,
+        height: 72,
         child: Stack(
           alignment: Alignment.center,
           children: [
+            // Outer ring with frosted glass effect
+            ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             // Progress indicator (only visible when recording)
             if (_isRecording)
               SizedBox(
-                width: 80,
-                height: 80,
+                width: 68,
+                height: 68,
                 child: CircularProgressIndicator(
                   value: _recordingSeconds / _maxRecordingSeconds,
-                  strokeWidth: 4,
-                  backgroundColor: Colors.white.withOpacity(0.3),
+                  strokeWidth: 3,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
 
             // Main button
             Container(
-              width: 70,
-              height: 70,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: _isRecording
                     ? FlutterFlowTheme.of(context).error
                     : Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
             ),
           ],
@@ -880,40 +884,58 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     return Positioned(
       top: 50,
       left: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).error,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: FlutterFlowTheme.of(context).info,
-                shape: BoxShape.circle,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).error.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              'REC $timeString',
-              style: FlutterFlowTheme.of(context).bodySmall.override(
-                    fontFamily: 'Readex Pro',
-                    color: FlutterFlowTheme.of(context).info,
-                    fontWeight: FontWeight.bold,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'REC $timeString',
+                  style: FlutterFlowTheme.of(context).bodySmall.override(
+                        fontFamily: 'Readex Pro',
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -925,27 +947,37 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     return Positioned(
       top: 50,
       right: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color:
-              FlutterFlowTheme.of(context).primaryBackground.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Text(
-          '${_currentZoom.toStringAsFixed(1)}x',
-          style: FlutterFlowTheme.of(context).bodySmall.override(
-                fontFamily: 'Readex Pro',
-                color: FlutterFlowTheme.of(context).primaryText,
-                fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              '${_currentZoom.toStringAsFixed(1)}x',
+              style: FlutterFlowTheme.of(context).bodySmall.override(
+                    fontFamily: 'Readex Pro',
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+            ),
+          ),
         ),
       ),
     );
@@ -956,20 +988,15 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     return Container(
       width: widget.width,
       height: widget.height,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(widget.borderRadius),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.borderRadius),
-        child: Stack(
-          children: [
-            _buildCameraPreview(),
-            _buildControls(),
-            _buildRecordingIndicator(),
-            _buildZoomIndicator(),
-          ],
-        ),
+      color: Colors.black, // Full black background
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildCameraPreview(),
+          _buildControls(),
+          _buildRecordingIndicator(),
+          _buildZoomIndicator(),
+        ],
       ),
     );
   }

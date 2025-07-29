@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-import 'index.dart'; // Imports other custom widgets
-
 import 'dart:io';
-import 'dart:math';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -79,9 +75,36 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
       return Container(
         width: widget.width,
         height: widget.height,
-        color: Colors.grey[300],
-        child: const Center(
-          child: Text('No image provided'),
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_outlined,
+                size: 64,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No image provided',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Select an image to start editing',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -89,6 +112,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
     return Container(
       width: widget.width,
       height: widget.height,
+      color: Colors.black, // Full black background
       child: ProImageEditor.file(
         File(widget.imagePath!),
         key: editorKey,
@@ -107,11 +131,12 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
               ? ImageEditorDesignMode.material
               : ImageEditorDesignMode.cupertino,
 
-          // Main editor with glassy theme
+          // Main editor with full black theme
           mainEditor: const MainEditorConfigs(
             style: MainEditorStyle(
-              background: Color(0xFF000000),
-              bottomBarBackground: Color(0x80000000), // Semi-transparent black
+              background: Color(0xFF000000), // Full black background
+              bottomBarBackground: Color(
+                  0x99000000), // More transparent for frosted glass effect
             ),
             icons: MainEditorIcons(
               closeEditor: Icons.close,
