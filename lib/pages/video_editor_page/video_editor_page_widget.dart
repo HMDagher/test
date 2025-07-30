@@ -60,6 +60,7 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
               height: double.infinity,
               isFrontCamera: widget.isFrontCamera,
               isAndroid: isAndroid,
+              videoFile: widget.videoPath,
               onVideoEdited: (editedVideoFile) async {},
               onError: (error) async {},
             ),
