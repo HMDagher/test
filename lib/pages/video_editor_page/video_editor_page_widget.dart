@@ -12,7 +12,7 @@ class VideoEditorPageWidget extends StatefulWidget {
     this.isFrontCamera,
   });
 
-  final String? videoPath;
+  final FFUploadedFile? videoPath;
   final bool? isFrontCamera;
 
   static String routeName = 'VideoEditorPage';
@@ -58,10 +58,10 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
             child: custom_widgets.VideoEditorWidget(
               width: double.infinity,
               height: double.infinity,
-              videoPath: widget.videoPath,
               isFrontCamera: widget.isFrontCamera,
               isAndroid: isAndroid,
-              onVideoEdited: (editedVideoPath) async {},
+              videoFile: widget.videoPath,
+              onVideoEdited: (editedVideoFile) async {},
               onError: (error) async {},
             ),
           ),

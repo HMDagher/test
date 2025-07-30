@@ -56,7 +56,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => ImageEditorPageWidget(
             imagePath: params.getParam(
               'imagePath',
-              ParamType.String,
+              ParamType.FFUploadedFile,
             ),
           ),
         ),
@@ -66,7 +66,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => VideoEditorPageWidget(
             videoPath: params.getParam(
               'videoPath',
-              ParamType.String,
+              ParamType.FFUploadedFile,
             ),
             isFrontCamera: params.getParam(
               'isFrontCamera',

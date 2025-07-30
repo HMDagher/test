@@ -17,13 +17,13 @@ import 'package:path/path.dart' as path;
 
 // Data class to hold captured media information
 class CapturedMediaInfo {
-  final String filePath;
+  final FFUploadedFile mediaFile;
   final bool isFrontCamera;
   final String mediaType; // 'image' or 'video'
   final DateTime capturedAt;
 
   CapturedMediaInfo({
-    required this.filePath,
+    required this.mediaFile,
     required this.isFrontCamera,
     required this.mediaType,
     required this.capturedAt,
@@ -90,9 +90,8 @@ class CameraCustomWidget extends StatefulWidget {
 
   final double? width;
   final double? height;
-  final Future<dynamic> Function(String imagePath, bool isFrontCamera)?
-      onImageCaptured;
-  final Future<dynamic> Function(String videoPath, bool isFrontCamera)?
+  final Future<dynamic> Function(FFUploadedFile imageFile)? onImageCaptured;
+  final Future<dynamic> Function(FFUploadedFile videoFile, bool isFrontCamera)?
       onVideoCaptured;
   final Future<dynamic> Function(String error)? onError;
   final bool showControls;
@@ -296,19 +295,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     return byteData!.buffer.asUint8List();
   }
 
-  // Helper function to save flipped image
-  Future<String> _saveFlippedImage(
-      Uint8List imageBytes, String originalPath) async {
-    final String dir = path.dirname(originalPath);
-    final String name = path.basenameWithoutExtension(originalPath);
-    final String ext = path.extension(originalPath);
-    final String newPath = path.join(dir, '${name}_front_flipped$ext');
-
-    final File newFile = File(newPath);
-    await newFile.writeAsBytes(imageBytes);
-    return newPath;
-  }
-
   Future<void> _takePicture() async {
     final CameraController? cameraController = _controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
@@ -322,28 +308,34 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
     try {
       final XFile image = await cameraController.takePicture();
-      String finalImagePath = image.path;
+      Uint8List finalImageBytes = await image.readAsBytes();
 
       // Flip front camera images for both iOS and Android
       // This ensures the captured image matches what users see in the preview
       if (_isUsingFrontCamera) {
         try {
-          final Uint8List imageBytes = await image.readAsBytes();
-          final Uint8List flippedBytes =
-              await _flipImageHorizontally(imageBytes);
-          finalImagePath = await _saveFlippedImage(flippedBytes, image.path);
-
-          // Delete the original unflipped image
-          await File(image.path).delete();
+          finalImageBytes = await _flipImageHorizontally(finalImageBytes);
         } catch (e) {
           debugPrint('Failed to flip image, using original: $e');
-          // If flipping fails, use the original image
-          finalImagePath = image.path;
+          // If flipping fails, use the original bytes
         }
       }
 
-      // Pass both the image path and camera info to the callback
-      await widget.onImageCaptured?.call(finalImagePath, _isUsingFrontCamera);
+      // Create FFUploadedFile from bytes
+      final FFUploadedFile uploadedFile = FFUploadedFile(
+        name: 'captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        bytes: finalImageBytes,
+      );
+
+      // Clean up the temporary file
+      try {
+        await File(image.path).delete();
+      } catch (e) {
+        debugPrint('Failed to delete temporary file: $e');
+      }
+
+      // Pass the image file to the callback
+      await widget.onImageCaptured?.call(uploadedFile);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -416,10 +408,23 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
     try {
       final XFile video = await cameraController.stopVideoRecording();
-      final String finalVideoPath = video.path;
+      final Uint8List videoBytes = await video.readAsBytes();
 
-      // Pass both the video path and camera info to the callback
-      await widget.onVideoCaptured?.call(finalVideoPath, _isUsingFrontCamera);
+      // Create FFUploadedFile from bytes
+      final FFUploadedFile uploadedFile = FFUploadedFile(
+        name: 'captured_video_${DateTime.now().millisecondsSinceEpoch}.mp4',
+        bytes: videoBytes,
+      );
+
+      // Clean up the temporary file
+      try {
+        await File(video.path).delete();
+      } catch (e) {
+        debugPrint('Failed to delete temporary video file: $e');
+      }
+
+      // Pass both the video file and camera info to the callback
+      await widget.onVideoCaptured?.call(uploadedFile, _isUsingFrontCamera);
 
       _recordingTimer?.cancel();
 

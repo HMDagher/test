@@ -11,7 +11,7 @@ class ImageEditorPageWidget extends StatefulWidget {
     this.imagePath,
   });
 
-  final String? imagePath;
+  final FFUploadedFile? imagePath;
 
   static String routeName = 'ImageEditorPage';
   static String routePath = '/imageEditorPage';
@@ -56,8 +56,8 @@ class _ImageEditorPageWidgetState extends State<ImageEditorPageWidget> {
             child: custom_widgets.ImageEditorWidget(
               width: double.infinity,
               height: double.infinity,
-              imagePath: widget.imagePath,
-              onImageEditingComplete: (imagePath) async {},
+              imageFile: widget.imagePath,
+              onImageEditingComplete: (imageFile) async {},
               onCloseEditor: () async {},
             ),
           ),
