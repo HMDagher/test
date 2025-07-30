@@ -56,7 +56,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => ImageEditorPageWidget(
             imagePath: params.getParam(
               'imagePath',
-              ParamType.FFUploadedFile,
+              ParamType.String,
             ),
           ),
         ),
@@ -66,7 +66,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => VideoEditorPageWidget(
             videoPath: params.getParam(
               'videoPath',
-              ParamType.FFUploadedFile,
+              ParamType.String,
             ),
             isFrontCamera: params.getParam(
               'isFrontCamera',
@@ -75,6 +75,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
+      observers: [routeObserver],
     );
 
 extension NavParamExtensions on Map<String, String?> {

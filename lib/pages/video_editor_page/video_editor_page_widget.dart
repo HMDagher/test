@@ -8,11 +8,11 @@ export 'video_editor_page_model.dart';
 class VideoEditorPageWidget extends StatefulWidget {
   const VideoEditorPageWidget({
     super.key,
-    this.videoPath,
-    this.isFrontCamera,
+    required this.videoPath,
+    required this.isFrontCamera,
   });
 
-  final FFUploadedFile? videoPath;
+  final String? videoPath;
   final bool? isFrontCamera;
 
   static String routeName = 'VideoEditorPage';
@@ -49,7 +49,7 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: FlutterFlowTheme.of(context).primaryText,
         body: SafeArea(
           top: true,
           child: Container(
@@ -60,8 +60,8 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
               height: double.infinity,
               isFrontCamera: widget.isFrontCamera,
               isAndroid: isAndroid,
-              videoFile: widget.videoPath,
-              onVideoEdited: (editedVideoFile) async {},
+              videoPath: widget.videoPath,
+              onVideoEdited: (editedVideoPath) async {},
               onError: (error) async {},
             ),
           ),

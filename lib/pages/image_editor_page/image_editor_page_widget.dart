@@ -8,10 +8,10 @@ export 'image_editor_page_model.dart';
 class ImageEditorPageWidget extends StatefulWidget {
   const ImageEditorPageWidget({
     super.key,
-    this.imagePath,
+    required this.imagePath,
   });
 
-  final FFUploadedFile? imagePath;
+  final String? imagePath;
 
   static String routeName = 'ImageEditorPage';
   static String routePath = '/imageEditorPage';
@@ -47,7 +47,7 @@ class _ImageEditorPageWidgetState extends State<ImageEditorPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: FlutterFlowTheme.of(context).primaryText,
         body: SafeArea(
           top: true,
           child: Container(
@@ -56,8 +56,8 @@ class _ImageEditorPageWidgetState extends State<ImageEditorPageWidget> {
             child: custom_widgets.ImageEditorWidget(
               width: double.infinity,
               height: double.infinity,
-              imageFile: widget.imagePath,
-              onImageEditingComplete: (imageFile) async {},
+              imagePath: widget.imagePath,
+              onImageEditingComplete: (imagePath) async {},
               onCloseEditor: () async {},
             ),
           ),

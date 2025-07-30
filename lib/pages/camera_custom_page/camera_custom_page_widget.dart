@@ -43,7 +43,7 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: FlutterFlowTheme.of(context).primaryText,
         body: SafeArea(
           top: true,
           child: Container(
@@ -62,24 +62,24 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
               showCameraSwitchButton: true,
               borderRadius: 12.0,
               isAndroid: isAndroid,
-              onImageCaptured: (imageFile) async {
+              onImageCaptured: (imagePath, isFrontCamera) async {
                 context.pushNamed(
                   ImageEditorPageWidget.routeName,
                   queryParameters: {
                     'imagePath': serializeParam(
-                      imageFile,
-                      ParamType.FFUploadedFile,
+                      imagePath,
+                      ParamType.String,
                     ),
                   }.withoutNulls,
                 );
               },
-              onVideoCaptured: (videoFile, isFrontCamera) async {
+              onVideoCaptured: (videoPath, isFrontCamera) async {
                 context.pushNamed(
                   VideoEditorPageWidget.routeName,
                   queryParameters: {
                     'videoPath': serializeParam(
-                      videoFile,
-                      ParamType.FFUploadedFile,
+                      videoPath,
+                      ParamType.String,
                     ),
                     'isFrontCamera': serializeParam(
                       isFrontCamera,

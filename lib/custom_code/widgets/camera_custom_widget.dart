@@ -14,16 +14,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 // Data class to hold captured media information
 class CapturedMediaInfo {
-  final FFUploadedFile mediaFile;
+  final String filePath;
   final bool isFrontCamera;
   final String mediaType; // 'image' or 'video'
   final DateTime capturedAt;
 
   CapturedMediaInfo({
-    required this.mediaFile,
+    required this.filePath,
     required this.isFrontCamera,
     required this.mediaType,
     required this.capturedAt,
@@ -90,8 +91,9 @@ class CameraCustomWidget extends StatefulWidget {
 
   final double? width;
   final double? height;
-  final Future<dynamic> Function(FFUploadedFile imageFile)? onImageCaptured;
-  final Future<dynamic> Function(FFUploadedFile videoFile, bool isFrontCamera)?
+  final Future<dynamic> Function(String imagePath, bool isFrontCamera)?
+      onImageCaptured;
+  final Future<dynamic> Function(String videoPath, bool isFrontCamera)?
       onVideoCaptured;
   final Future<dynamic> Function(String error)? onError;
   final bool showControls;
@@ -321,11 +323,13 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         }
       }
 
-      // Create FFUploadedFile from bytes
-      final FFUploadedFile uploadedFile = FFUploadedFile(
-        name: 'captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        bytes: finalImageBytes,
-      );
+      // Save processed image to a permanent location
+      final Directory appDir = await getApplicationDocumentsDirectory();
+      final String fileName =
+          'captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String finalPath = '${appDir.path}/$fileName';
+      final File finalFile = File(finalPath);
+      await finalFile.writeAsBytes(finalImageBytes);
 
       // Clean up the temporary file
       try {
@@ -334,8 +338,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         debugPrint('Failed to delete temporary file: $e');
       }
 
-      // Pass the image file to the callback
-      await widget.onImageCaptured?.call(uploadedFile);
+      // Pass the image path and camera info to the callback
+      await widget.onImageCaptured?.call(finalPath, _isUsingFrontCamera);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -410,11 +414,13 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       final XFile video = await cameraController.stopVideoRecording();
       final Uint8List videoBytes = await video.readAsBytes();
 
-      // Create FFUploadedFile from bytes
-      final FFUploadedFile uploadedFile = FFUploadedFile(
-        name: 'captured_video_${DateTime.now().millisecondsSinceEpoch}.mp4',
-        bytes: videoBytes,
-      );
+      // Save video to a permanent location
+      final Directory appDir = await getApplicationDocumentsDirectory();
+      final String fileName =
+          'captured_video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final String finalPath = '${appDir.path}/$fileName';
+      final File finalFile = File(finalPath);
+      await finalFile.writeAsBytes(videoBytes);
 
       // Clean up the temporary file
       try {
@@ -423,8 +429,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         debugPrint('Failed to delete temporary video file: $e');
       }
 
-      // Pass both the video file and camera info to the callback
-      await widget.onVideoCaptured?.call(uploadedFile, _isUsingFrontCamera);
+      // Pass both the video path and camera info to the callback
+      await widget.onVideoCaptured?.call(finalPath, _isUsingFrontCamera);
 
       _recordingTimer?.cancel();
 

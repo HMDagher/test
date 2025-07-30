@@ -9,22 +9,22 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ImageEditorWidget extends StatefulWidget {
   const ImageEditorWidget({
     super.key,
     this.width,
     this.height,
-    this.imageFile,
+    this.imagePath,
     this.onImageEditingComplete,
     this.onCloseEditor,
   });
 
   final double? width;
   final double? height;
-  final FFUploadedFile? imageFile;
-  final Future<dynamic> Function(FFUploadedFile imageFile)?
-      onImageEditingComplete;
+  final String? imagePath;
+  final Future<dynamic> Function(String imagePath)? onImageEditingComplete;
   final Future<dynamic> Function()? onCloseEditor;
 
   @override
@@ -43,12 +43,15 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
   Future<void> onImageEditingComplete(Uint8List bytes) async {
     if (widget.onImageEditingComplete != null) {
       try {
-        // Create FFUploadedFile from edited bytes
-        final FFUploadedFile editedFile = FFUploadedFile(
-          name: 'edited_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          bytes: bytes,
-        );
-        await widget.onImageEditingComplete!(editedFile);
+        // Save edited image to a permanent location
+        final Directory appDir = await getApplicationDocumentsDirectory();
+        final String fileName =
+            'edited_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final String finalPath = '${appDir.path}/$fileName';
+        final File finalFile = File(finalPath);
+        await finalFile.writeAsBytes(bytes);
+
+        await widget.onImageEditingComplete!(finalPath);
       } catch (e) {
         debugPrint('Error processing edited image: $e');
       }
@@ -71,9 +74,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.imageFile == null ||
-        widget.imageFile!.bytes == null ||
-        widget.imageFile!.bytes!.isEmpty) {
+    if (widget.imagePath == null || widget.imagePath!.isEmpty) {
       return Container(
         width: widget.width,
         height: widget.height,
@@ -121,8 +122,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
         color: Colors.black, // Full black background
       ),
       clipBehavior: Clip.antiAlias,
-      child: ProImageEditor.memory(
-        widget.imageFile!.bytes!,
+      child: ProImageEditor.file(
+        File(widget.imagePath!),
         key: editorKey,
         callbacks: ProImageEditorCallbacks(
           onImageEditingStarted: onImageEditingStarted,
