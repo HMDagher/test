@@ -42,13 +42,14 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
-	<key>NSCameraUsageDescription</key>
-    <string>accept </string>
-	<key>NSMicrophoneUsageDescription</key>
-    <string>accept</string>
+
 	<key>NSPhotoLibraryUsageDescription</key>
     <string>accept</string>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>accept</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
+    <string>accept</string>
+	<key>NSCameraUsageDescription</key>
     <string>accept</string>
 
 

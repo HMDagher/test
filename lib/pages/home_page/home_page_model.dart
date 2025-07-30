@@ -4,15 +4,9 @@ import 'home_page_widget.dart' show HomePageWidget;
 import 'package:flutter/material.dart';
 
 class HomePageModel extends FlutterFlowModel<HomePageWidget> {
-  ///  State fields for stateful widgets in this page.
+  ///  Local state fields for this page.
 
-  bool isDataUploading_fFVideo = false;
-  FFUploadedFile uploadedLocalFile_fFVideo =
-      FFUploadedFile(bytes: Uint8List.fromList([]));
-
-  bool isDataUploading_fFImage = false;
-  FFUploadedFile uploadedLocalFile_fFImage =
-      FFUploadedFile(bytes: Uint8List.fromList([]));
+  bool shouldTrigger = false;
 
   @override
   void initState(BuildContext context) {}
