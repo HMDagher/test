@@ -48,7 +48,6 @@ dependencies:
   html: 0.15.6
   intl: 0.20.2
   json_path: 0.7.2
-  overlapped_carousel: ^1.0.2
   page_transition: 2.1.0
   path_provider: 2.1.4
   path_provider_android: 2.2.10
@@ -67,7 +66,6 @@ dependencies:
   shared_preferences_windows: 2.4.1
   sqflite: 2.3.3+1
   sqflite_common: 2.5.4+3
-  tiktoklikescroller: ^0.2.8
   timeago: 3.7.1
   url_launcher: 6.3.1
   url_launcher_android: 6.3.16

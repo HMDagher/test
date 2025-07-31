@@ -163,7 +163,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       onPressed: () async {
                         context.pushNamed(DocumentScannerPageWidget.routeName);
                       },
-                      text: 'Button',
+                      text: 'Scanner',
                       options: FFButtonOptions(
                         height: 40.0,
                         padding: EdgeInsetsDirectional.fromSTEB(
