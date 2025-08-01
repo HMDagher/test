@@ -12,6 +12,7 @@ import 'package:easy_video_editor/easy_video_editor.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 class VideoEditorWidget extends StatefulWidget {
   const VideoEditorWidget({
@@ -208,44 +209,82 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Close button
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 24,
+                  // Close button with frosted glass
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(25),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: () async {
+                            if (widget.onCloseEditor != null) {
+                              await widget.onCloseEditor!();
+                            }
+                          },
+                        ),
                       ),
-                      onPressed: () async {
-                        if (widget.onCloseEditor != null) {
-                          await widget.onCloseEditor!();
-                        }
-                      },
                     ),
                   ),
-                  // Done button
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 24,
+                  // Done button with frosted glass
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(25),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: () async {
+                            if (widget.onVideoEditingComplete != null &&
+                                _processedVideoPath != null) {
+                              await widget.onVideoEditingComplete!(
+                                  _processedVideoPath!);
+                            }
+                          },
+                        ),
                       ),
-                      onPressed: () async {
-                        if (widget.onVideoEditingComplete != null &&
-                            _processedVideoPath != null) {
-                          await widget
-                              .onVideoEditingComplete!(_processedVideoPath!);
-                        }
-                      },
                     ),
                   ),
                 ],
