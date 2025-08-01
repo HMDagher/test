@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/custom_code/actions/index.dart' as actions;
 import '/custom_code/widgets/index.dart' as custom_widgets;
 import '/index.dart';
 import 'package:flutter/material.dart';
@@ -57,36 +58,96 @@ class _CameraCustomPageWidgetState extends State<CameraCustomPageWidget> {
               flashMode: 'auto',
               resolutionPreset: 'high',
               enableAudio: true,
-              showZoomControls: true,
               showFlashControls: true,
               showCameraSwitchButton: true,
-              borderRadius: 12.0,
-              isAndroid: isAndroid,
               onImageCaptured: (imagePath, isFrontCamera) async {
-                context.pushNamed(
-                  ImageEditorPageWidget.routeName,
-                  queryParameters: {
-                    'imagePath': serializeParam(
-                      imagePath,
-                      ParamType.String,
-                    ),
-                  }.withoutNulls,
-                );
+                var _shouldSetState = false;
+                if (isFrontCamera) {
+                  _model.flippedImagePath = await actions.flipImageAction(
+                    imagePath,
+                  );
+                  _shouldSetState = true;
+
+                  context.pushNamed(
+                    ImageEditorPageWidget.routeName,
+                    queryParameters: {
+                      'imagePath': serializeParam(
+                        _model.flippedImagePath,
+                        ParamType.String,
+                      ),
+                    }.withoutNulls,
+                  );
+
+                  if (_shouldSetState) safeSetState(() {});
+                  return;
+                } else {
+                  context.pushNamed(
+                    ImageEditorPageWidget.routeName,
+                    queryParameters: {
+                      'imagePath': serializeParam(
+                        imagePath,
+                        ParamType.String,
+                      ),
+                    }.withoutNulls,
+                  );
+
+                  if (_shouldSetState) safeSetState(() {});
+                  return;
+                }
+
+                if (_shouldSetState) safeSetState(() {});
               },
               onVideoCaptured: (videoPath, isFrontCamera) async {
-                context.pushNamed(
-                  VideoEditorPageWidget.routeName,
-                  queryParameters: {
-                    'videoPath': serializeParam(
+                var _shouldSetState = false;
+                if (isFrontCamera) {
+                  if (isAndroid) {
+                    _model.flippedVideoPath = await actions.flipVideoAction(
                       videoPath,
-                      ParamType.String,
-                    ),
-                    'isFrontCamera': serializeParam(
-                      isFrontCamera,
-                      ParamType.bool,
-                    ),
-                  }.withoutNulls,
-                );
+                    );
+                    _shouldSetState = true;
+
+                    context.pushNamed(
+                      VideoEditorPageWidget.routeName,
+                      queryParameters: {
+                        'videoPath': serializeParam(
+                          _model.flippedVideoPath,
+                          ParamType.String,
+                        ),
+                      }.withoutNulls,
+                    );
+
+                    if (_shouldSetState) safeSetState(() {});
+                    return;
+                  } else {
+                    context.pushNamed(
+                      VideoEditorPageWidget.routeName,
+                      queryParameters: {
+                        'videoPath': serializeParam(
+                          videoPath,
+                          ParamType.String,
+                        ),
+                      }.withoutNulls,
+                    );
+
+                    if (_shouldSetState) safeSetState(() {});
+                    return;
+                  }
+                } else {
+                  context.pushNamed(
+                    VideoEditorPageWidget.routeName,
+                    queryParameters: {
+                      'videoPath': serializeParam(
+                        videoPath,
+                        ParamType.String,
+                      ),
+                    }.withoutNulls,
+                  );
+
+                  if (_shouldSetState) safeSetState(() {});
+                  return;
+                }
+
+                if (_shouldSetState) safeSetState(() {});
               },
               onError: (error) async {},
             ),

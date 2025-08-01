@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/custom_code/actions/index.dart' as actions;
 import '/custom_code/widgets/index.dart' as custom_widgets;
 import 'package:flutter/material.dart';
 import 'video_editor_page_model.dart';
@@ -9,11 +10,9 @@ class VideoEditorPageWidget extends StatefulWidget {
   const VideoEditorPageWidget({
     super.key,
     required this.videoPath,
-    required this.isFrontCamera,
   });
 
   final String? videoPath;
-  final bool? isFrontCamera;
 
   static String routeName = 'VideoEditorPage';
   static String routePath = '/videoEditorPage';
@@ -58,11 +57,18 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
             child: custom_widgets.VideoEditorWidget(
               width: double.infinity,
               height: double.infinity,
-              isFrontCamera: widget.isFrontCamera,
-              isAndroid: isAndroid,
               videoPath: widget.videoPath,
-              onVideoEdited: (editedVideoPath) async {},
-              onError: (error) async {},
+              onVideoEditingComplete: (editedVideoPath) async {
+                _model.compressedVideopath =
+                    await actions.compressVideoForUploadAction(
+                  editedVideoPath,
+                );
+
+                safeSetState(() {});
+              },
+              onCloseEditor: () async {
+                context.safePop();
+              },
             ),
           ),
         ),

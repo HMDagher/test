@@ -14,24 +14,9 @@ import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:video_player/video_player.dart';
+
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-
-// Data class to hold captured media information
-class CapturedMediaInfo {
-  final String filePath;
-  final bool isFrontCamera;
-  final String mediaType; // 'image' or 'video'
-  final DateTime capturedAt;
-
-  CapturedMediaInfo({
-    required this.filePath,
-    required this.isFrontCamera,
-    required this.mediaType,
-    required this.capturedAt,
-  });
-}
 
 // Helper functions to convert string parameters to camera package enums
 FlashMode _convertFlashMode(String mode) {
@@ -84,11 +69,8 @@ class CameraCustomWidget extends StatefulWidget {
     this.flashMode = 'auto',
     this.resolutionPreset = 'high',
     this.enableAudio = true,
-    this.showZoomControls = true,
     this.showFlashControls = true,
     this.showCameraSwitchButton = true,
-    this.borderRadius = 12.0,
-    this.isAndroid = true,
   });
 
   final double? width;
@@ -103,11 +85,8 @@ class CameraCustomWidget extends StatefulWidget {
   final String flashMode;
   final String resolutionPreset;
   final bool enableAudio;
-  final bool showZoomControls;
   final bool showFlashControls;
   final bool showCameraSwitchButton;
-  final double borderRadius;
-  final bool isAndroid;
 
   @override
   State<CameraCustomWidget> createState() => _CameraCustomWidgetState();
@@ -120,7 +99,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
   int _selectedCameraIndex = 0;
   bool _isInitialized = false;
   bool _isRecording = false;
-  VideoPlayerController? _videoController;
 
   // Recording timer and progress
   Timer? _recordingTimer;
@@ -139,7 +117,7 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
   List<CameraDescription> _backCameras = [];
   List<CameraDescription> _frontCameras = [];
   int _currentBackCameraIndex = 0;
-  int _currentFrontCameraIndex = 0;
+
   bool _isUsingFrontCamera = false;
 
   @override
@@ -155,7 +133,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     WidgetsBinding.instance.removeObserver(this);
     _recordingTimer?.cancel();
     _controller?.dispose();
-    _videoController?.dispose();
     super.dispose();
   }
 
@@ -272,33 +249,6 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     }
   }
 
-  // Helper function to flip image horizontally
-  Future<Uint8List> _flipImageHorizontally(Uint8List imageBytes) async {
-    final ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
-    final ui.FrameInfo frameInfo = await codec.getNextFrame();
-    final ui.Image image = frameInfo.image;
-
-    final ui.PictureRecorder recorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(recorder);
-
-    // Apply horizontal flip transformation
-    canvas.scale(-1.0, 1.0);
-    canvas.translate(-image.width.toDouble(), 0);
-    canvas.drawImage(image, Offset.zero, Paint());
-
-    final ui.Picture picture = recorder.endRecording();
-    final ui.Image flippedImage =
-        await picture.toImage(image.width, image.height);
-    final ByteData? byteData =
-        await flippedImage.toByteData(format: ui.ImageByteFormat.png);
-
-    image.dispose();
-    flippedImage.dispose();
-    picture.dispose();
-
-    return byteData!.buffer.asUint8List();
-  }
-
   Future<void> _takePicture() async {
     final CameraController? cameraController = _controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
@@ -312,26 +262,15 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
     try {
       final XFile image = await cameraController.takePicture();
-      Uint8List finalImageBytes = await image.readAsBytes();
+      final Uint8List imageBytes = await image.readAsBytes();
 
-      // Flip front camera images for both iOS and Android
-      // This ensures the captured image matches what users see in the preview
-      if (_isUsingFrontCamera) {
-        try {
-          finalImageBytes = await _flipImageHorizontally(finalImageBytes);
-        } catch (e) {
-          debugPrint('Failed to flip image, using original: $e');
-          // If flipping fails, use the original bytes
-        }
-      }
-
-      // Save processed image to a permanent location
+      // Save image to a permanent location
       final Directory appDir = await getApplicationDocumentsDirectory();
       final String fileName =
           'captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final String finalPath = '${appDir.path}/$fileName';
       final File finalFile = File(finalPath);
-      await finalFile.writeAsBytes(finalImageBytes);
+      await finalFile.writeAsBytes(imageBytes);
 
       // Clean up the temporary file
       try {
@@ -469,8 +408,7 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
     } else if (!_isUsingFrontCamera && _frontCameras.isNotEmpty) {
       // Switch to front camera
       _isUsingFrontCamera = true;
-      _selectedCameraIndex =
-          _cameras.indexOf(_frontCameras[_currentFrontCameraIndex]);
+      _selectedCameraIndex = _cameras.indexOf(_frontCameras[0]);
     }
 
     await _initializeCameraController(_cameras[_selectedCameraIndex]);
@@ -612,71 +550,79 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
   Widget _buildControls() {
     if (!widget.showControls) return const SizedBox.shrink();
 
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.6),
-                  Colors.black.withValues(alpha: 0.3),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Zoom lens switcher for back cameras
-                  if (!_isUsingFrontCamera && _backCameras.length > 1)
-                    _buildZoomLensSwitcher(),
+    return Stack(
+      children: [
+        // Zoom lens switcher positioned outside the main controls
+        if (!_isUsingFrontCamera && _backCameras.length > 1)
+          Positioned(
+            bottom: 140,
+            left: 0,
+            right: 0,
+            child: Center(child: _buildZoomLensSwitcher()),
+          ),
 
-                  const SizedBox(height: 16),
-
-                  // Main controls row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Flash control (left side)
-                      if (widget.showFlashControls)
-                        _buildSideControlButton(
-                          icon: _getFlashIcon(),
-                          onPressed: _toggleFlashMode,
-                        )
-                      else
-                        const SizedBox(width: 44),
-
-                      // Main capture button (center)
-                      _buildInstagramStyleCaptureButton(),
-
-                      // Camera switch (right side)
-                      if ((_backCameras.isNotEmpty &&
-                              _frontCameras.isNotEmpty) &&
-                          widget.showCameraSwitchButton)
-                        _buildSideControlButton(
-                          icon: _getCameraIcon(),
-                          onPressed: _switchCamera,
-                        )
-                      else
-                        const SizedBox(width: 44),
+        // Main controls container
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: ClipRRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.transparent,
                     ],
                   ),
-                ],
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Main controls row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Flash control (left side)
+                          if (widget.showFlashControls)
+                            _buildSideControlButton(
+                              icon: _getFlashIcon(),
+                              onPressed: _toggleFlashMode,
+                            )
+                          else
+                            const SizedBox(width: 50),
+
+                          // Main capture button (center)
+                          _buildInstagramStyleCaptureButton(),
+
+                          // Camera switch (right side)
+                          if ((_backCameras.isNotEmpty &&
+                                  _frontCameras.isNotEmpty) &&
+                              widget.showCameraSwitchButton)
+                            _buildSideControlButton(
+                              icon: _getCameraIcon(),
+                              onPressed: _switchCamera,
+                            )
+                          else
+                            const SizedBox(width: 50),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -690,8 +636,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          width: 44,
-          height: 44,
+          width: 50,
+          height: 50,
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.5),
             shape: BoxShape.circle,
@@ -711,7 +657,7 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
             icon: Icon(
               icon,
               color: color ?? Colors.white,
-              size: 20,
+              size: 24,
             ),
             onPressed: onPressed,
           ),
@@ -804,8 +750,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
         }
       },
       child: Container(
-        width: 72,
-        height: 72,
+        width: 80,
+        height: 80,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -815,8 +761,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                 child: Container(
-                  width: 72,
-                  height: 72,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
@@ -839,8 +785,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
             // Progress indicator (only visible when recording)
             if (_isRecording)
               SizedBox(
-                width: 68,
-                height: 68,
+                width: 76,
+                height: 76,
                 child: CircularProgressIndicator(
                   value: _recordingSeconds / _maxRecordingSeconds,
                   strokeWidth: 3,
@@ -851,8 +797,8 @@ class _CameraCustomWidgetState extends State<CameraCustomWidget>
 
             // Main button
             Container(
-              width: 56,
-              height: 56,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
                 color: _isRecording
                     ? FlutterFlowTheme.of(context).error

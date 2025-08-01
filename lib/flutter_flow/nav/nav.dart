@@ -70,10 +70,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               'videoPath',
               ParamType.String,
             ),
-            isFrontCamera: params.getParam(
-              'isFrontCamera',
-              ParamType.bool,
-            ),
           ),
         ),
         FFRoute(

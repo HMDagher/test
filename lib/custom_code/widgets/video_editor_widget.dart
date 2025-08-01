@@ -19,19 +19,16 @@ class VideoEditorWidget extends StatefulWidget {
     this.width,
     this.height,
     this.videoPath,
-    this.isFrontCamera,
-    this.isAndroid,
-    this.onVideoEdited,
-    this.onError,
+    this.onVideoEditingComplete,
+    this.onCloseEditor,
   });
 
   final double? width;
   final double? height;
   final String? videoPath; // Video path from camera widget
-  final bool? isFrontCamera; // Whether video was captured with front camera
-  final bool? isAndroid; // Whether running on Android platform
-  final Future<dynamic> Function(String editedVideoPath)? onVideoEdited;
-  final Future<dynamic> Function(String error)? onError;
+  final Future<dynamic> Function(String editedVideoPath)?
+      onVideoEditingComplete;
+  final Future<dynamic> Function()? onCloseEditor;
 
   @override
   State<VideoEditorWidget> createState() => _VideoEditorWidgetState();
@@ -40,11 +37,7 @@ class VideoEditorWidget extends StatefulWidget {
 class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   VideoPlayerController? _videoController;
   bool _isProcessing = false;
-  double _processingProgress = 0.0;
   String? _processedVideoPath;
-
-  // Auto-flip detection
-  bool _shouldAutoFlip = false;
 
   @override
   void initState() {
@@ -76,60 +69,14 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
     });
 
     try {
-      // Determine if video should be flipped (Android front camera only)
-      _shouldAutoFlip = _shouldFlipVideo();
-
-      if (_shouldAutoFlip) {
-        // Process the video (flip it)
-        await _processVideo();
-      } else {
-        // Use original video
-        _processedVideoPath = widget.videoPath!;
-        await _initializeVideoPlayer();
-      }
+      // Use original video
+      _processedVideoPath = widget.videoPath!;
+      await _initializeVideoPlayer();
     } catch (e) {
       setState(() {
         _isProcessing = false;
       });
       _handleError('Error initializing video: $e');
-    }
-  }
-
-  bool _shouldFlipVideo() {
-    // Only flip front camera videos on Android
-    final isFrontCamera = widget.isFrontCamera ?? false;
-    final isAndroid = widget.isAndroid ?? false;
-
-    return isFrontCamera && isAndroid;
-  }
-
-  Future<void> _processVideo() async {
-    if (widget.videoPath == null) return;
-
-    try {
-      final editor = VideoEditorBuilder(videoPath: widget.videoPath!)
-          .flip(flipDirection: FlipDirection.horizontal);
-
-      // Export with progress tracking
-      final outputPath = await editor.export(
-        onProgress: (progress) {
-          setState(() {
-            _processingProgress = progress;
-          });
-        },
-      );
-
-      if (outputPath == null) {
-        throw Exception('Failed to process video - output path is null');
-      }
-
-      _processedVideoPath = outputPath;
-      await _initializeVideoPlayer();
-
-      // Call the callback with the processed video path
-      await widget.onVideoEdited?.call(_processedVideoPath!);
-    } catch (e) {
-      throw Exception('Video processing failed: $e');
     }
   }
 
@@ -147,18 +94,12 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
       setState(() {
         _isProcessing = false;
       });
-
-      // If no flipping was needed, still call the callback
-      if (!_shouldAutoFlip) {
-        await widget.onVideoEdited?.call(_processedVideoPath!);
-      }
     } catch (e) {
       throw Exception('Video player initialization failed: $e');
     }
   }
 
   void _handleError(String error) {
-    widget.onError?.call(error);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(error),
@@ -247,36 +188,67 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      _shouldAutoFlip
-                          ? 'Processing video...'
-                          : 'Loading video...',
+                      'Loading video...',
                       style: FlutterFlowTheme.of(context).bodyLarge.override(
                             fontFamily: 'Readex Pro',
                             color: Colors.white,
                           ),
                     ),
-                    if (_processingProgress > 0) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: 200,
-                        child: LinearProgressIndicator(
-                          value: _processingProgress,
-                          backgroundColor: Colors.white.withValues(alpha: 0.3),
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${(_processingProgress * 100).toStringAsFixed(0)}%',
-                        style: FlutterFlowTheme.of(context).bodySmall.override(
-                              fontFamily: 'Readex Pro',
-                              color: Colors.white.withValues(alpha: 0.8),
-                            ),
-                      ),
-                    ],
                   ],
                 ),
+              ),
+            ),
+
+          // Control buttons overlay
+          if (!_isProcessing)
+            Positioned(
+              top: 50,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Close button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () async {
+                        if (widget.onCloseEditor != null) {
+                          await widget.onCloseEditor!();
+                        }
+                      },
+                    ),
+                  ),
+                  // Done button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () async {
+                        if (widget.onVideoEditingComplete != null &&
+                            _processedVideoPath != null) {
+                          await widget
+                              .onVideoEditingComplete!(_processedVideoPath!);
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
