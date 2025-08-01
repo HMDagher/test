@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/custom_code/actions/index.dart' as actions;
 import '/custom_code/widgets/index.dart' as custom_widgets;
 import 'package:flutter/material.dart';
 import 'image_editor_page_model.dart';
@@ -8,7 +9,7 @@ export 'image_editor_page_model.dart';
 class ImageEditorPageWidget extends StatefulWidget {
   const ImageEditorPageWidget({
     super.key,
-    required this.imagePath,
+    this.imagePath,
   });
 
   final String? imagePath;
@@ -57,8 +58,17 @@ class _ImageEditorPageWidgetState extends State<ImageEditorPageWidget> {
               width: double.infinity,
               height: double.infinity,
               imagePath: widget.imagePath,
-              onImageEditingComplete: (imagePath) async {},
-              onCloseEditor: () async {},
+              onImageEditingComplete: (imagePath) async {
+                _model.compressedImagePath =
+                    await actions.compressImageForUploadAction(
+                  imagePath,
+                );
+
+                safeSetState(() {});
+              },
+              onCloseEditor: () async {
+                context.safePop();
+              },
             ),
           ),
         ),
