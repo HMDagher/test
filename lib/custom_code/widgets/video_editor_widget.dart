@@ -38,6 +38,7 @@ class VideoEditorWidget extends StatefulWidget {
 class _VideoEditorWidgetState extends State<VideoEditorWidget> {
   VideoPlayerController? _videoController;
   bool _isProcessing = false;
+  bool _isSubmitting = false; // Prevent multiple submissions
   String? _processedVideoPath;
 
   @override
@@ -58,6 +59,7 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
 
   @override
   void dispose() {
+    _videoController?.pause(); // Pause video before disposing
     _videoController?.dispose();
     super.dispose();
   }
@@ -238,11 +240,15 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
                             color: Colors.white,
                             size: 24,
                           ),
-                          onPressed: () async {
-                            if (widget.onCloseEditor != null) {
-                              await widget.onCloseEditor!();
-                            }
-                          },
+                          onPressed: _isSubmitting
+                              ? null
+                              : () async {
+                                  _videoController
+                                      ?.pause(); // Pause video when closing
+                                  if (widget.onCloseEditor != null) {
+                                    await widget.onCloseEditor!();
+                                  }
+                                },
                         ),
                       ),
                     ),
@@ -271,18 +277,44 @@ class _VideoEditorWidgetState extends State<VideoEditorWidget> {
                           ],
                         ),
                         child: IconButton(
-                          icon: const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          onPressed: () async {
-                            if (widget.onVideoEditingComplete != null &&
-                                _processedVideoPath != null) {
-                              await widget.onVideoEditingComplete!(
-                                  _processedVideoPath!);
-                            }
-                          },
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () async {
+                                  if (widget.onVideoEditingComplete != null &&
+                                      _processedVideoPath != null) {
+                                    setState(() {
+                                      _isSubmitting = true;
+                                    });
+
+                                    try {
+                                      _videoController
+                                          ?.pause(); // Pause video before submitting
+                                      await widget.onVideoEditingComplete!(
+                                          _processedVideoPath!);
+                                    } finally {
+                                      // Reset submitting state if widget is still mounted
+                                      if (mounted) {
+                                        setState(() {
+                                          _isSubmitting = false;
+                                        });
+                                      }
+                                    }
+                                  }
+                                },
                         ),
                       ),
                     ),

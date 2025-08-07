@@ -2,6 +2,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/custom_code/actions/index.dart' as actions;
 import '/custom_code/widgets/index.dart' as custom_widgets;
+import '/index.dart';
 import 'package:flutter/material.dart';
 import 'video_editor_page_model.dart';
 export 'video_editor_page_model.dart';
@@ -63,6 +64,8 @@ class _VideoEditorPageWidgetState extends State<VideoEditorPageWidget> {
                     await actions.compressVideoForUploadAction(
                   editedVideoPath,
                 );
+
+                context.pushNamed(HomePageWidget.routeName);
 
                 safeSetState(() {});
               },

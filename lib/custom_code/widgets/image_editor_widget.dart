@@ -134,7 +134,21 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
       'mascot-lebnene.png',
       'mascot-love.png',
       'mascot-bored.png',
-      'mascot-kiss.png',
+      'mascot-back.png',
+      'mascot-front.png',
+      'mascot-jagal.png',
+      'mascot-mexican.png',
+      'mascot-pointing.png',
+      'mascot-sad.png',
+      'mascot-simple-guy.png',
+      'mascot-sleepy.png',
+      'mascot-summer.png',
+      'mascot-surfing.png',
+      'mascot-surprised-phone.png',
+      'mascot-surprised.png',
+      'mascot-trendy-girl.png',
+      'mascot-welcome.png',
+      'mascot-winter.png',
     ];
 
     return ClipRRect(
