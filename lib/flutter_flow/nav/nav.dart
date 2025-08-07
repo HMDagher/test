@@ -76,6 +76,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: DocumentScannerPageWidget.routeName,
           path: DocumentScannerPageWidget.routePath,
           builder: (context, params) => DocumentScannerPageWidget(),
+        ),
+        FFRoute(
+          name: TestpageWidget.routeName,
+          path: TestpageWidget.routePath,
+          builder: (context, params) => TestpageWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
       observers: [routeObserver],
